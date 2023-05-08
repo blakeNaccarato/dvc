@@ -39,12 +39,9 @@ class ExpStatus(Enum):
 
 
 def _is_scm_error(collected_exp: Dict[str, Any]) -> bool:
-    if "error" in collected_exp and (
-        isinstance(collected_exp["error"], SCMError)
-        or isinstance(collected_exp["error"], InnerScmError)
-    ):
-        return True
-    return False
+    return "error" in collected_exp and (
+        isinstance(collected_exp["error"], (SCMError, InnerScmError))
+    )
 
 
 def _show_onerror_collect(result: Dict, exception: Exception, *args, **kwargs):
@@ -74,10 +71,9 @@ def collect_experiment_commit(
             commit = repo.scm.resolve_commit(rev)
             result["timestamp"] = datetime.fromtimestamp(commit.commit_time)
 
-        params = _gather_params(
+        if params := _gather_params(
             repo, rev=rev, targets=None, deps=param_deps, onerror=onerror
-        )
-        if params:
+        ):
             result["params"] = params
 
         result["deps"] = {
@@ -132,7 +128,7 @@ def _collect_complete_experiment(
 ) -> Dict[str, Dict[str, Any]]:
     results: "OrderedDict[str, Dict[str, Any]]" = OrderedDict()
 
-    checkpoint: bool = True if len(revs) > 1 else False
+    checkpoint: bool = len(revs) > 1
     prev = ""
     for rev in revs:
         status = ExpStatus.Running if rev in running else ExpStatus.Success
@@ -155,7 +151,7 @@ def _collect_complete_experiment(
                 results[rev]["data"].update(exp)
                 results.move_to_end(rev)
             else:
-                exp.update(collected_exp["data"])
+                exp |= collected_exp["data"]
         else:
             exp = collected_exp["data"]
         if rev not in results:
@@ -211,7 +207,7 @@ def _collect_branch(
         )
         if _is_scm_error(collected_exp):
             continue
-        results.update(collected_exp)
+        results |= collected_exp
     return results
 
 
@@ -230,7 +226,7 @@ def get_names(repo: "Repo", result: Dict[str, Dict[str, Any]]):
     names: Dict[str, Optional[str]] = {}
     for base in ("refs/tags/", "refs/heads/"):
         if rev_set:
-            names.update(
+            names |= (
                 (rev, ref[len(base) :])
                 for rev, ref in repo.scm.describe(
                     baseline_set, base=base
@@ -249,8 +245,7 @@ def get_names(repo: "Repo", result: Dict[str, Dict[str, Any]]):
                 if rev == "workspace":
                     continue
                 name = names.get(rev, None)
-            name = name or exact_name[rev]
-            if name:
+            if name := name or exact_name[rev]:
                 rev_result["data"]["name"] = name
 
 
@@ -366,8 +361,8 @@ def show(
         revs = [revs]
 
     found_revs: Dict[str, List[str]] = {"workspace": []}
-    found_revs.update(
-        iter_revs(repo.scm, revs, num, all_branches, all_tags, all_commits)
+    found_revs |= iter_revs(
+        repo.scm, revs, num, all_branches, all_tags, all_commits
     )
 
     running: Dict[str, Dict] = repo.experiments.get_running_exps(
@@ -375,15 +370,15 @@ def show(
     )
 
     queued_experiment = (
-        _collect_queued_experiment(
+        {}
+        if hide_queued
+        else _collect_queued_experiment(
             repo,
             found_revs,
             running,
             param_deps=param_deps,
             onerror=onerror,
         )
-        if not hide_queued
-        else {}
     )
 
     active_experiment = _collect_active_experiment(
@@ -395,7 +390,9 @@ def show(
     )
 
     failed_experiments = (
-        _collect_failed_experiment(
+        {}
+        if hide_failed
+        else _collect_failed_experiment(
             repo,
             found_revs,
             running,
@@ -403,8 +400,6 @@ def show(
             param_deps=param_deps,
             onerror=onerror,
         )
-        if not hide_failed
-        else {}
     )
 
     for baseline in found_revs:

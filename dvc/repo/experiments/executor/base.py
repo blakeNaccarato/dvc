@@ -94,9 +94,8 @@ class ExecutorInfo:
 
     @classmethod
     def from_dict(cls, d):
-        if "collected" in d:
-            if d.pop("collected"):
-                d["status"] = TaskStatus.FINISHED
+        if "collected" in d and d.pop("collected"):
+            d["status"] = TaskStatus.FINISHED
         return cls(**d)
 
     def asdict(self):
@@ -263,7 +262,7 @@ class BaseExecutor(ABC):
         root_dir: str,
         **kwargs,
     ) -> _T:
-        executor = cls(
+        return cls(
             root_dir=root_dir,
             dvc_dir=relpath(repo.dvc_dir, repo.scm.root_dir),
             baseline_rev=entry.baseline_rev,
@@ -272,7 +271,6 @@ class BaseExecutor(ABC):
             wdir=relpath(os.getcwd(), repo.scm.root_dir),
             **kwargs,
         )
-        return executor
 
     @staticmethod
     def hash_exp(stages: Iterable["PipelineStage"]) -> str:
@@ -281,7 +279,7 @@ class BaseExecutor(ABC):
         exp_data = {}
         for stage in stages:
             if isinstance(stage, PipelineStage):
-                exp_data.update(to_lockfile(stage))
+                exp_data |= to_lockfile(stage)
         return dict_sha256(exp_data)
 
     def cleanup(self, infofile: str):
@@ -446,20 +444,16 @@ class BaseExecutor(ABC):
         repro_force: bool = False
 
         with cls._repro_dvc(
-            info,
-            infofile,
-            log_errors=log_errors,
-            **kwargs,
-        ) as dvc:
+                info,
+                infofile,
+                log_errors=log_errors,
+                **kwargs,
+            ) as dvc:
             if auto_push:
                 cls._validate_remotes(dvc, git_remote)
 
             args, kwargs = cls._repro_args(dvc)
-            if args:
-                targets: Optional[Union[list, str]] = args[0]
-            else:
-                targets = kwargs.get("targets")
-
+            targets = args[0] if args else kwargs.get("targets")
             repro_force = kwargs.get("force", False)
             logger.trace(  # type: ignore[attr-defined]
                 "Executor repro with force = '%s'", str(repro_force)
@@ -563,8 +557,7 @@ class BaseExecutor(ABC):
             ExpRefInfo.from_ref(ref) if ref else None
         )
         if cls.WARN_UNTRACKED:
-            untracked = dvc.scm.untracked_files()
-            if untracked:
+            if untracked := dvc.scm.untracked_files():
                 logger.warning(
                     "The following untracked files were present in "
                     "the experiment directory after reproduction but "

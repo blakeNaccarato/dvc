@@ -38,12 +38,7 @@ def run_stage(dvc, request):
         assert "fname" not in kwargs
 
         if request.param["single_stage"]:
-            kwargs.update(
-                {
-                    "fname": name + ".dvc",
-                    "single_stage": True,
-                }
-            )
+            kwargs.update({"fname": f"{name}.dvc", "single_stage": True})
         else:
             kwargs["name"] = name
         return dvc.run(*args, **kwargs)
@@ -330,9 +325,7 @@ def test_repro_dry_no_exec(tmp_dir, dvc):
         idir = f"idir{d}"
         odir = f"odir{d}"
 
-        deps.append("-d")
-        deps.append(odir)
-
+        deps.extend(("-d", odir))
         os.mkdir(idir)
 
         f = os.path.join(idir, "file")
@@ -348,8 +341,7 @@ def test_repro_dry_no_exec(tmp_dir, dvc):
                 idir,
                 "-o",
                 odir,
-                "python -c 'import shutil; "
-                'shutil.copytree("{}", "{}")\''.format(idir, odir),
+                f"""python -c 'import shutil; shutil.copytree("{idir}", "{odir}")\'""",
             ]
         )
         assert ret == 0
@@ -362,9 +354,7 @@ def test_repro_dry_no_exec(tmp_dir, dvc):
             "--file",
             DVC_FILE,
             *deps,
-            "ls {}".format(
-                " ".join(dep for i, dep in enumerate(deps) if i % 2)
-            ),
+            f'ls {" ".join(dep for i, dep in enumerate(deps) if i % 2)}',
         ]
     )
     assert ret == 0
@@ -610,7 +600,7 @@ def test_repro_metrics_add_unchanged(tmp_dir, dvc, copy_script):
     assert stages[0] is not None
 
     file1 = "file1"
-    file1_stage = file1 + ".dvc"
+    file1_stage = f"{file1}.dvc"
     dvc.run(
         fname=file1_stage,
         outs_no_cache=[file1],
@@ -731,7 +721,7 @@ def test_repro_changed_dir_data(tmp_dir, dvc, copy_script, run_stage):
 
     file = os.path.join("data", "foo")
     # Check that dvc registers mtime change for the directory.
-    system.hardlink(file, file + ".lnk")
+    system.hardlink(file, f"{file}.lnk")
     stages = dvc.reproduce(stage.addressing)
     assert len(stages) == 1
 
@@ -944,19 +934,16 @@ def repro_dir(tmp_dir, dvc, run_copy):
         }
     )
 
-    stages = {}
-
     origin_copy = tmp_dir / "origin_copy"
     stage = run_copy("origin_data", os.fspath(origin_copy), single_stage=True)
     assert stage is not None
     assert origin_copy.read_text() == "origin data content"
-    stages["origin_copy"] = stage
-
+    stages = {"origin_copy": stage}
     origin_copy_2 = tmp_dir / "dir" / "origin_copy_2"
     stage = run_copy(
         os.fspath(origin_copy),
         os.fspath(origin_copy_2),
-        fname=os.fspath(origin_copy_2) + ".dvc",
+        fname=f"{os.fspath(origin_copy_2)}.dvc",
         single_stage=True,
     )
     assert stage is not None
@@ -968,7 +955,7 @@ def repro_dir(tmp_dir, dvc, run_copy):
     stage = run_copy(
         os.fspath(dir_file_path),
         os.fspath(dir_file_copy),
-        fname=os.fspath(dir_file_copy) + ".dvc",
+        fname=f"{os.fspath(dir_file_copy)}.dvc",
         single_stage=True,
     )
     assert stage is not None
@@ -978,7 +965,7 @@ def repro_dir(tmp_dir, dvc, run_copy):
     last_stage = tmp_dir / "dir" / DVC_FILE
     deps = [os.fspath(origin_copy_2), os.fspath(dir_file_copy)]
     stage = dvc.run(
-        cmd="echo {}".format(" ".join(deps)),
+        cmd=f'echo {" ".join(deps)}',
         fname=os.fspath(last_stage),
         deps=deps,
         single_stage=True,
@@ -1133,11 +1120,11 @@ def test_dvc_formatting_retained(tmp_dir, dvc, run_copy):
 def _format_dvc_line(line):
     # Add line comment for all cache and md5 keys
     if "cache:" in line or "md5:" in line:
-        return line + " # line comment"
+        return f"{line} # line comment"
     # Format command as one word per line
     if line.startswith("cmd: "):
         pre, command = line.split(None, 1)
-        return pre + " >\n" + "\n".join("  " + s for s in command.split())
+        return pre + " >\n" + "\n".join(f"  {s}" for s in command.split())
     return line
 
 

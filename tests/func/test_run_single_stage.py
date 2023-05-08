@@ -65,7 +65,7 @@ def test_run(tmp_dir, copy_script, dvc):
             deps=deps,
             outs=outs,
             outs_no_cache=outs_no_cache,
-            fname="duplicate" + fname,
+            fname=f"duplicate{fname}",
             single_stage=True,
         )
 
@@ -582,7 +582,7 @@ class TestCmdRunWorkingDirectory:
         dname = "dir"
         os.mkdir(os.path.join(tmp_dir, dname))
         foo = os.path.join(dname, "foo")
-        fname = os.path.join(dname, "stage" + DVC_FILE_SUFFIX)
+        fname = os.path.join(dname, f"stage{DVC_FILE_SUFFIX}")
         stage = dvc.run(
             cmd=f"echo test > {foo}",
             outs=[foo],
@@ -686,7 +686,7 @@ def test_run_commit(dvc):
     assert os.path.isfile(fname)
     assert not os.path.exists(dvc.odb.local.path)
 
-    ret = main(["commit", fname + ".dvc"])
+    ret = main(["commit", f"{fname}.dvc"])
     assert ret == 0
     assert os.path.isfile(fname)
     assert len(list(dvc.odb.local.all())) == 1

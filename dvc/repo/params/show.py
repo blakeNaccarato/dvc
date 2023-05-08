@@ -82,10 +82,9 @@ def _read_params(
         for param in params:
             if stages and param.stage.addressing not in stages:
                 continue
-            params_dict = error_handler(param.read_params)(
+            if params_dict := error_handler(param.read_params)(
                 onerror=onerror, flatten=False
-            )
-            if params_dict:
+            ):
                 name = os.sep.join(repo.fs.path.relparts(param.fs_path))
                 res[name]["data"].update(params_dict["data"])
                 if name in fs_paths:
@@ -94,8 +93,7 @@ def _read_params(
         fs_paths += [param.fs_path for param in params]
 
     for fs_path in fs_paths:
-        from_path = _read_fs_path(repo.fs, fs_path, onerror=onerror)
-        if from_path:
+        if from_path := _read_fs_path(repo.fs, fs_path, onerror=onerror):
             name = os.sep.join(repo.fs.path.relparts(fs_path))
             res[name] = from_path
 
@@ -137,16 +135,14 @@ def show(
     targets = [repo.dvcfs.from_os_path(target) for target in targets]
 
     for branch in repo.brancher(revs=revs):
-        params = error_handler(_gather_params)(
+        if params := error_handler(_gather_params)(
             repo=repo,
             rev=branch,
             targets=targets,
             deps=deps,
             onerror=onerror,
             stages=stages,
-        )
-
-        if params:
+        ):
             res[branch] = params
 
     # Hide workspace params if they are the same as in the active branch
@@ -160,8 +156,7 @@ def show(
         if res.get("workspace") == res.get(active_branch):
             res.pop("workspace", None)
 
-    errored = errored_revisions(res)
-    if errored:
+    if errored := errored_revisions(res):
         ui.error_write(
             "DVC failed to load some parameters for following revisions:"
             f" '{', '.join(errored)}'."

@@ -92,9 +92,8 @@ def _(obj: dict):
         if isinstance(v, bool):
             if v:
                 result += f"--{k} "
-            else:
-                if config.get("bool", "store_true") == "boolean_optional":
-                    result += f"--no-{k} "
+            elif config.get("bool", "store_true") == "boolean_optional":
+                result += f"--no-{k} "
 
         elif isinstance(v, str):
             result += f"--{k} '{v}' "
@@ -150,9 +149,7 @@ def recurse(f):
             return {g(k): g(v) for k, v in data.items()}
         if isinstance(data, seq):
             return type(data)(map(g, data))
-        if isinstance(data, str):
-            return f(data, *args)
-        return data
+        return f(data, *args) if isinstance(data, str) else data
 
     return wrapper
 
@@ -193,9 +190,8 @@ def validate_value(value, key):
     not_primitive = value is not None and not isinstance(value, PRIMITIVES)
     not_foreach = key is not None and "foreach" not in key
     if not_primitive and not_foreach:
-        if isinstance(value, dict):
-            if key == "cmd":
-                return True
+        if isinstance(value, dict) and key == "cmd":
+            return True
         raise ParseError(
             f"Cannot interpolate data of type '{type(value).__name__}'"
         )

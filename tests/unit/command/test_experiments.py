@@ -139,7 +139,7 @@ def test_experiments_run(dvc, scm, mocker):
         "reset": False,
         "machine": None,
     }
-    default_arguments.update(repro_arguments)
+    default_arguments |= repro_arguments
 
     cmd = CmdExperimentsRun(parse_args(["exp", "run"]))
     mocker.patch.object(cmd.repo, "reproduce")

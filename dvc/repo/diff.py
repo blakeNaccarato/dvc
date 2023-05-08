@@ -120,16 +120,12 @@ def _output_paths(repo, targets):
     on_working_fs = isinstance(repo.fs, LocalFileSystem)
 
     def _exists(output):
-        if on_working_fs:
-            return output.exists
-        return True
+        return output.exists if on_working_fs else True
 
     def _to_path(output):
         relparts = output.fs.path.relparts(output.fs_path)
         base = os.path.join(*relparts)
-        if output.is_dir_checksum:
-            return os.path.join(base, "")
-        return base
+        return os.path.join(base, "") if output.is_dir_checksum else base
 
     for output in repo.index.outs:
         if _exists(output):

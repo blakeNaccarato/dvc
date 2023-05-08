@@ -57,9 +57,7 @@ def _log_exceptions(exc: Exception) -> Optional[int]:
 
         if exc.errno == errno.EMFILE:
             logger.exception(
-                "too many open files, please visit "
-                "{} to see how to handle this "
-                "problem".format(error_link("many-files")),
+                f'too many open files, please visit {error_link("many-files")} to see how to handle this problem',
                 extra={"tb_only": True},
             )
         else:
@@ -77,8 +75,7 @@ def _log_exceptions(exc: Exception) -> Optional[int]:
             "conda": f"conda install -c conda-forge dvc-{proto}",
         }
 
-        cmd = by_pkg.get(PKG)
-        if cmd:
+        if cmd := by_pkg.get(PKG):
             link = format_link("https://dvc.org/doc/install")
             hint = (
                 f"To install dvc with those dependencies, run:\n"

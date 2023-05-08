@@ -58,7 +58,7 @@ def _get_flags(out):
 
 def _serialize_out(out):
     flags = _get_flags(out)
-    return out.def_path if not flags else {out.def_path: flags}
+    return {out.def_path: flags} if flags else out.def_path
 
 
 @no_type_check
@@ -158,10 +158,7 @@ def to_single_stage_lockfile(stage: "Stage", **kwargs) -> dict:
         ]
 
         if item.hash_info.isdir and kwargs.get("with_files"):
-            if item.obj:
-                obj = item.obj
-            else:
-                obj = item.get_obj()
+            obj = item.obj if item.obj else item.get_obj()
             ret.append((item.PARAM_FILES, obj.as_list(with_meta=True)))
 
         return OrderedDict(ret)

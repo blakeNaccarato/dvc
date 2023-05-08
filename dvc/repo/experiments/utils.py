@@ -127,22 +127,19 @@ def push_refspec(
         for ref in scm.iter_refs(base=src):
             refname = ref.split("/")[-1]
             refspecs.append(f"{ref}:{dest}{refname}")
+    elif dest.endswith("/"):
+        refname = src.split("/")[-1]
+        refspecs = [f"{src}:{dest}/{refname}"]
     else:
-        if dest.endswith("/"):
-            refname = src.split("/")[-1]
-            refspecs = [f"{src}:{dest}/{refname}"]
-        else:
-            refspecs = [f"{src}:{dest}"]
+        refspecs = [f"{src}:{dest}"]
 
     try:
         results = scm.push_refspecs(
             url, refspecs, force=force, on_diverged=on_diverged, **kwargs
         )
-        diverged = [
+        if diverged := [
             ref for ref in results if results[ref] == SyncStatus.DIVERGED
-        ]
-
-        if diverged:
+        ]:
             raise SCMError(
                 f"local ref '{diverged}' diverged from remote '{url}'"
             )

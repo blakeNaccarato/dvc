@@ -7,10 +7,7 @@ def test_remove_done_tasks(dvc, test_queue, scm, mocker):
     failed_test = ["failed1", "failed2"]
     success_test = ["success1", "success2"]
 
-    # create mock ref info
-    ref_info_dict = {}
-    for name in success_test:
-        ref_info_dict[name] = mocker.Mock()
+    ref_info_dict = {name: mocker.Mock() for name in success_test}
     for name in failed_test:
         ref_info_dict[name] = None
 

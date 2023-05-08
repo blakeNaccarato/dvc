@@ -350,11 +350,7 @@ class Output:
             )
             self.meta.version_id = version_id
 
-        if self.is_in_repo:
-            self.hash_name = "md5"
-        else:
-            self.hash_name = self.fs.PARAM_CHECKSUM
-
+        self.hash_name = "md5" if self.is_in_repo else self.fs.PARAM_CHECKSUM
         self.hash_info = HashInfo(
             name=self.hash_name,
             value=getattr(self.meta, self.hash_name, None),
@@ -362,8 +358,7 @@ class Output:
         if self.meta.nfiles or self.hash_info and self.hash_info.isdir:
             self.meta.isdir = True
             if not self.hash_info and self.hash_name != "md5":
-                md5 = getattr(self.meta, "md5", None)
-                if md5:
+                if md5 := getattr(self.meta, "md5", None):
                     self.hash_info = HashInfo("md5", md5)
 
     def _parse_path(self, fs, fs_path):
@@ -431,10 +426,11 @@ class Output:
 
     @property
     def use_scm_ignore(self):
-        if not self.is_in_repo:
-            return False
-
-        return self.use_cache or self.stage.is_repo_import
+        return (
+            self.use_cache or self.stage.is_repo_import
+            if self.is_in_repo
+            else False
+        )
 
     @property
     def odb(self):
@@ -455,10 +451,7 @@ class Output:
         return hash_info
 
     def _get_hash_meta(self):
-        if self.use_cache:
-            odb = self.odb
-        else:
-            odb = self.repo.odb.local
+        odb = self.odb if self.use_cache else self.repo.odb.local
         _, meta, obj = build(
             odb,
             self.fs_path,
@@ -478,10 +471,11 @@ class Output:
         return self.hash_info.isdir
 
     def _is_path_dvcignore(self, path) -> bool:
-        if not self.IS_DEPENDENCY and self.dvcignore:
-            if self.dvcignore.is_ignored(self.fs, path, ignore_subrepos=False):
-                return True
-        return False
+        return bool(
+            not self.IS_DEPENDENCY
+            and self.dvcignore
+            and self.dvcignore.is_ignored(self.fs, path, ignore_subrepos=False)
+        )
 
     @property
     def exists(self):
@@ -560,10 +554,7 @@ class Output:
         if self.changed_checksum():
             return {str(self): "modified"}
 
-        if not self.hash_info:
-            return {str(self): "new"}
-
-        return {}
+        return {} if self.hash_info else {str(self): "new"}
 
     def status(self):
         if self.hash_info and self.use_cache and self.changed_cache():
@@ -578,9 +569,7 @@ class Output:
 
     @property
     def dvcignore(self):
-        if self.fs.protocol == "local":
-            return self.repo.dvcignore
-        return None
+        return self.repo.dvcignore if self.fs.protocol == "local" else None
 
     @property
     def is_empty(self):
@@ -680,12 +669,11 @@ class Output:
         assert self.hash_info
 
         if self.use_cache:
-            granular = (
+            if granular := (
                 self.is_dir_checksum
                 and filter_info
                 and filter_info != self.fs_path
-            )
-            if granular:
+            ):
                 obj = self._commit_granular_dir(filter_info)
             else:
                 staging, _, obj = build(
@@ -750,16 +738,15 @@ class Output:
         ret[self.PARAM_PATH] = path
 
         if not self.IS_DEPENDENCY:
-            ret.update(self.annot.to_dict())
+            ret |= self.annot.to_dict()
             if not self.use_cache:
                 ret[self.PARAM_CACHE] = self.use_cache
 
-            if isinstance(self.metric, dict):
-                if (
-                    self.PARAM_METRIC_XPATH in self.metric
-                    and not self.metric[self.PARAM_METRIC_XPATH]
-                ):
-                    del self.metric[self.PARAM_METRIC_XPATH]
+            if isinstance(self.metric, dict) and (
+                self.PARAM_METRIC_XPATH in self.metric
+                and not self.metric[self.PARAM_METRIC_XPATH]
+            ):
+                del self.metric[self.PARAM_METRIC_XPATH]
 
             if self.metric:
                 ret[self.PARAM_METRIC] = self.metric
@@ -781,10 +768,7 @@ class Output:
             and self.hash_info.isdir
             and (kwargs.get("with_files") or self.files is not None)
         ):
-            if self.obj:
-                obj = self.obj
-            else:
-                obj = self.get_obj()
+            obj = self.obj if self.obj else self.get_obj()
             ret[self.PARAM_FILES] = obj.as_list(with_meta=True)
 
         return ret
@@ -1010,8 +994,7 @@ class Output:
             )
             if not force and not prompt.confirm(msg.format(self.fs_path)):
                 raise CollectCacheError(
-                    "unable to fully collect used cache"
-                    " without cache for directory '{}'".format(self)
+                    f"unable to fully collect used cache without cache for directory '{self}'"
                 )
             return None
 
@@ -1036,13 +1019,7 @@ class Output:
             return self.get_used_external(**kwargs)
 
         if not self.hash_info:
-            msg = (
-                "Output '{}'({}) is missing version info. "
-                "Cache for it will not be collected. "
-                "Use `dvc repro` to get your pipeline up to date.".format(
-                    self, self.stage
-                )
-            )
+            msg = f"Output '{self}'({self.stage}) is missing version info. Cache for it will not be collected. Use `dvc repro` to get your pipeline up to date."
             if self.exists:
                 msg += (
                     "\n"

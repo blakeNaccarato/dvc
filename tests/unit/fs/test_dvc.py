@@ -206,9 +206,7 @@ def test_walk(tmp_dir, dvc, dvcfiles, extra_expected):
 
     actual = []
     for root, dirs, files in fs.walk("dir", dvcfiles=dvcfiles):
-        for entry in dirs + files:
-            actual.append(posixpath.join(root, entry))
-
+        actual.extend(posixpath.join(root, entry) for entry in dirs + files)
     expected += extra_expected
     assert set(actual) == set(expected)
     assert len(actual) == len(expected)
@@ -242,9 +240,7 @@ def test_walk_dirty(tmp_dir, dvc):
 
     actual = []
     for root, dirs, files in fs.walk("dir"):
-        for entry in dirs + files:
-            actual.append(posixpath.join(root, entry))
-
+        actual.extend(posixpath.join(root, entry) for entry in dirs + files)
     assert set(actual) == set(expected)
     assert len(actual) == len(expected)
 
@@ -257,9 +253,7 @@ def test_walk_dirty_cached_dir(tmp_dir, scm, dvc):
 
     actual = []
     for root, dirs, files in fs.walk("data"):
-        for entry in dirs + files:
-            actual.append(posixpath.join(root, entry))
-
+        actual.extend(posixpath.join(root, entry) for entry in dirs + files)
     expected = ["data/foo", "data/bar"]
     assert set(actual) == set(expected)
     assert len(actual) == len(expected)
@@ -286,9 +280,7 @@ def test_walk_mixed_dir(tmp_dir, scm, dvc):
     ]
     actual = []
     for root, dirs, files in fs.walk("dir"):
-        for entry in dirs + files:
-            actual.append(posixpath.join(root, entry))
-
+        actual.extend(posixpath.join(root, entry) for entry in dirs + files)
     assert set(actual) == set(expected)
     assert len(actual) == len(expected)
 
@@ -441,9 +433,7 @@ def test_subrepo_walk(tmp_dir, scm, dvc, dvcfiles, extra_expected):
         dvcfiles=dvcfiles,
         ignore_subrepos=False,
     ):
-        for entry in dirs + files:
-            actual.append(posixpath.join(root, entry))
-
+        actual.extend(posixpath.join(root, entry) for entry in dirs + files)
     expected += extra_expected
     assert set(actual) == set(expected)
     assert len(actual) == len(expected)
@@ -476,9 +466,7 @@ def test_dvcfs_no_subrepos(tmp_dir, dvc, scm):
 
     actual = []
     for root, dirs, files in fs.walk("/", dvcfiles=True):
-        for entry in dirs + files:
-            actual.append(posixpath.join(root, entry))
-
+        actual.extend(posixpath.join(root, entry) for entry in dirs + files)
     assert set(actual) == set(expected)
     assert len(actual) == len(expected)
 
@@ -639,7 +627,7 @@ def test_walk_nested_subrepos(tmp_dir, dvc, scm, traverse_subrepos):
 
         if traverse_subrepos or repo_dir == tmp_dir:
             repo_dir_path = (
-                "/" + repo_dir.relative_to(tmp_dir).as_posix()
+                f"/{repo_dir.relative_to(tmp_dir).as_posix()}"
                 if repo_dir != tmp_dir
                 else "/"
             )

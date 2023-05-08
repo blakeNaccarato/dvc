@@ -137,7 +137,7 @@ class Repo:
         db_dir = self.fs.path.join(
             base_db_dir,
             self.DVC_DIR,
-            f"{self.fs.path.name(self.root_dir)}-{root_dir_hash[0:7]}",
+            f"{self.fs.path.name(self.root_dir)}-{root_dir_hash[:7]}",
         )
 
         self.fs.makedirs(db_dir, exist_ok=True)
@@ -466,10 +466,7 @@ class Repo:
             if out.protocol == "local" and match(fs_path, out.fs_path):
                 return True
 
-            if recursive and out.fs.path.isin(out.fs_path, fs_path):
-                return True
-
-            return False
+            return bool(recursive and out.fs.path.isin(out.fs_path, fs_path))
 
         matched = list(filter(func, outs))
         if not matched:

@@ -153,8 +153,7 @@ class VegaConverter(Converter):
         self.steps = [(_name, fn) for _name, fn in self.steps if _name != name]
 
     def _infer_fields(self):
-        fields = self.plot_properties.get("fields", set())
-        if fields:
+        if fields := self.plot_properties.get("fields", set()):
             fields = {
                 *fields,
                 self.plot_properties.get("x", None),
@@ -289,7 +288,7 @@ class VegaConverter(Converter):
 
             all_fields = _to_set(y_values.values())
             if (
-                all([isinstance(field, str) for field in all_fields])
+                all(isinstance(field, str) for field in all_fields)
                 and len(all_fields) == 1
             ):
                 # if we use the same field from all files,
@@ -302,7 +301,7 @@ class VegaConverter(Converter):
                             _version_info(revision, filename, y_field),
                         )
                     )
-                properties_update.update({"y": y_field})
+                properties_update["y"] = y_field
             else:
                 for def_filename, val in y_values.items():
                     if isinstance(val, str):

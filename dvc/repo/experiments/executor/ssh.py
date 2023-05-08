@@ -111,11 +111,10 @@ class SSHExecutor(BaseExecutor):
 
     @staticmethod
     def _git_client_args(fs):
-        kwargs = {
+        return {
             "password": fs.fs_args.get("password"),
             "key_filename": first(fs.fs_args.get("client_keys", [])),
         }
-        return kwargs
 
     def init_git(
         self,
@@ -228,7 +227,7 @@ class SSHExecutor(BaseExecutor):
 
     def fetch_exps(self, *args, **kwargs) -> Iterable[str]:
         with self.sshfs() as fs:
-            kwargs.update(self._git_client_args(fs))
+            kwargs |= self._git_client_args(fs)
             return super().fetch_exps(*args, **kwargs)
 
     @classmethod

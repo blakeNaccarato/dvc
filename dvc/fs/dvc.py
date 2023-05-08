@@ -51,9 +51,7 @@ def _merge_info(repo, fs_info, dvc_info):
     if fs_info:
         ret["type"] = fs_info["type"]
         ret["size"] = fs_info["size"]
-        isexec = False
-        if fs_info["type"] == "file":
-            isexec = utils.is_exec(fs_info["mode"])
+        isexec = utils.is_exec(fs_info["mode"]) if fs_info["type"] == "file" else False
         ret["isexec"] = isexec
 
     return ret
@@ -171,9 +169,7 @@ class _DVCFileSystem(AbstractFileSystem):  # pylint:disable=abstract-method
 
     @property
     def repo_url(self):
-        if self.repo is None:
-            return None
-        return self.repo.url
+        return None if self.repo is None else self.repo.url
 
     @classmethod
     def _make_repo(cls, **kwargs) -> "Repo":
@@ -287,14 +283,11 @@ class _DVCFileSystem(AbstractFileSystem):  # pylint:disable=abstract-method
         if not dvc_only:
             fs = self.repo.fs
             fs_path = self._from_key(key)
-            try:
+            with suppress(FileNotFoundError, NotADirectoryError):
                 for entry in repo.dvcignore.ls(
                     fs, fs_path, detail=False, ignore_subrepos=ignore_subrepos
                 ):
                     names.add(fs.path.name(entry))
-            except (FileNotFoundError, NotADirectoryError):
-                pass
-
         dvcfiles = kwargs.get("dvcfiles", False)
         if not dvcfiles:
             names = (name for name in names if not _is_dvc_file(name))
@@ -316,10 +309,7 @@ class _DVCFileSystem(AbstractFileSystem):  # pylint:disable=abstract-method
             infos.append(info)
             paths.append(entry_path)
 
-        if not detail:
-            return paths
-
-        return infos
+        return infos if detail else paths
 
     def info(self, path, **kwargs):
         key = self._get_key_from_relative(path)
@@ -331,13 +321,10 @@ class _DVCFileSystem(AbstractFileSystem):  # pylint:disable=abstract-method
 
         dvc_info = None
         if dvc_fs:
-            try:
+            with suppress(FileNotFoundError):
                 dvc_info = dvc_fs.fs.index.info(subkey)
                 dvc_path = _get_dvc_path(dvc_fs, subkey)
                 dvc_info["name"] = dvc_path
-            except FileNotFoundError:
-                pass
-
         fs_info = None
         fs = self.repo.fs
         fs_path = self._from_key(key)

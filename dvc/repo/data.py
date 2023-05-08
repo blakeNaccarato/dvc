@@ -107,8 +107,8 @@ def _get_obj_items(root: str, obj: Optional["HashFile"]) -> List[str]:
 
     from dvc_data.hashfile.tree import Tree
 
-    sep = os.path.sep
     if isinstance(obj, Tree):
+        sep = os.path.sep
         return [sep.join([root, *key]) for key, _, _ in obj]
     return [root]
 

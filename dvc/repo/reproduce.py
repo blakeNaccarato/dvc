@@ -248,11 +248,7 @@ def _get_steps(G, stages, downstream, single_item):
 
     steps = []
     for stage in all_pipelines:
-        if stage not in steps:
-            # NOTE: order of steps still matters for single_item
-            if single_item and stage not in stages:
-                continue
-
+        if stage not in steps and (not single_item or stage in stages):
             steps.append(stage)
 
     return steps

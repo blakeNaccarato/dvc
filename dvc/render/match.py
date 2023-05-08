@@ -44,14 +44,13 @@ class PlotsData:
     def get_definition_data(self, target_files, rev):
         result = []
         for file in target_files:
-            file_content = (
+            if file_content := (
                 self.data.get(rev, {})
                 .get("sources", {})
                 .get("data", {})
                 .get(file, {})
                 .get("data", {})
-            )
-            if file_content:
+            ):
                 result.append((file, file_content))
 
         return result

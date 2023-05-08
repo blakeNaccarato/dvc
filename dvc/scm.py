@@ -63,9 +63,7 @@ class GitMergeError(SCMError):
 
     @staticmethod
     def _is_shallow(scm: "Git") -> bool:
-        if os.path.exists(os.path.join(scm.root_dir, Git.GIT_DIR, "shallow")):
-            return True
-        return False
+        return bool(os.path.exists(os.path.join(scm.root_dir, Git.GIT_DIR, "shallow")))
 
 
 @contextmanager
@@ -120,7 +118,7 @@ class TqdmGit(Tqdm):
     def update_git(self, event: "GitProgressEvent") -> None:
         phase, completed, total, message, *_ = event
         if phase:
-            message = (phase + " | " + message) if message else phase
+            message = f"{phase} | {message}" if message else phase
         if message:
             self.set_msg(message)
         force_refresh = (  # force-refresh progress bar when:
@@ -242,9 +240,7 @@ def iter_revs(
 
             def _time_filter(rev):
                 try:
-                    if scm.resolve_commit(rev).commit_date >= commit_datestamp:
-                        return True
-                    return False
+                    return scm.resolve_commit(rev).commit_date >= commit_datestamp
                 except _SCMError:
                     return True
 

@@ -42,7 +42,7 @@ def _collect_paths(
 
         rel = fs.path.relpath(fs_path)
         if not fs.exists(fs_path):
-            if rev == "workspace" or rev == "":
+            if rev in {"workspace", ""}:
                 logger.warning("'%s' was not found in current workspace.", rel)
             else:
                 logger.warning("'%s' was not found at: '%s'.", rel, rev)

@@ -36,7 +36,7 @@ def _adjust_vega_renderers(renderers):
                     vi = dp.pop(VERSION_FIELD, {})
                     keys = list(vi.keys())
                     for key in keys:
-                        if not (len(summary.get(key, set())) > 1):
+                        if len(summary.get(key, set())) <= 1:
                             vi.pop(key)
                     if vi:
                         dp["rev"] = "::".join(vi.values())
@@ -79,10 +79,7 @@ class CmdPlots(CmdBase):
         return {k: v for k, v in props.items() if v is not None}
 
     def _config_files(self):
-        config_files = None
-        if self.args.from_config:
-            config_files = {self.args.from_config}
-        return config_files
+        return {self.args.from_config} if self.args.from_config else None
 
     def _html_template_path(self):
         html_template_path = self.args.html_template
@@ -150,8 +147,9 @@ class CmdPlots(CmdBase):
 
             _adjust_vega_renderers(renderers)
             if self.args.show_vega:
-                renderer = first(filter(lambda r: r.TYPE == "vega", renderers))
-                if renderer:
+                if renderer := first(
+                    filter(lambda r: r.TYPE == "vega", renderers)
+                ):
                     ui.write_json(json.loads(renderer.get_filled_template()))
                 return 0
 
@@ -215,8 +213,7 @@ class CmdPlotsTemplates(CmdBase):
         from dvc_render.vega_templates import TEMPLATES
 
         try:
-            target = self.args.template
-            if target:
+            if target := self.args.template:
                 for template in TEMPLATES:
                     if target == template.DEFAULT_NAME:
                         ui.write_json(template.DEFAULT_CONTENT)
@@ -362,12 +359,7 @@ def _add_props_arguments(parser):
         "--template",
         nargs="?",
         default=None,
-        help=(
-            "Special JSON or HTML schema file to inject with the data. "
-            "See {}".format(
-                format_link("https://man.dvc.org/plots#plot-templates")
-            )
-        ),
+        help=f'Special JSON or HTML schema file to inject with the data. See {format_link("https://man.dvc.org/plots#plot-templates")}',
         metavar="<path>",
     ).complete = completion.FILE
     parser.add_argument(

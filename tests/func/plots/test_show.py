@@ -78,11 +78,7 @@ def test_show_non_plot(tmp_dir, scm, use_dvc):
     metric = [{"first_val": 100, "val": 2}, {"first_val": 200, "val": 3}]
     (tmp_dir / "metric.json").dump_json(metric, sort_keys=True)
 
-    if use_dvc:
-        dvc = Repo.init()
-    else:
-        dvc = Repo(uninitialized=True)
-
+    dvc = Repo.init() if use_dvc else Repo(uninitialized=True)
     plots = dvc.plots.show(targets=["metric.json"])
 
     assert get_plot(plots, "workspace", file="metric.json") == metric
@@ -377,8 +373,7 @@ def test_load_from_config(
     }
 
     for filename, content in data.items():
-        dirname = os.path.dirname(filename)
-        if dirname:
+        if dirname := os.path.dirname(filename):
             os.makedirs(dirname)
         (tmp_dir / filename).dump_json(content, sort_keys=True)
 

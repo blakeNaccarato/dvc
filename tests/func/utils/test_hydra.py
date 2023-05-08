@@ -93,16 +93,15 @@ from dvc.exceptions import InvalidArgumentError
 def test_apply_overrides(tmp_dir, suffix, overrides, expected):
     from dvc.utils.hydra import apply_overrides
 
-    if suffix == "toml":
-        if overrides in [
-            ["foo=baz"],
-            ["foo.0=bar"],
-            ["foo=baz", "goo=bar"],
-            ["lorem=null"],
-        ]:
-            # TOML dumper breaks when overriding a list/dict with other type
-            # or when handling `null` values.
-            pytest.xfail()
+    if suffix == "toml" and overrides in [
+        ["foo=baz"],
+        ["foo.0=bar"],
+        ["foo=baz", "goo=bar"],
+        ["lorem=null"],
+    ]:
+        # TOML dumper breaks when overriding a list/dict with other type
+        # or when handling `null` values.
+        pytest.xfail()
 
     params_file = tmp_dir / f"params.{suffix}"
     params_file.dump(

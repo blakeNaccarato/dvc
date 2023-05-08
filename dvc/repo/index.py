@@ -79,9 +79,11 @@ class Index:
     def __repr__(self) -> str:
         from dvc.fs import LocalFileSystem
 
-        rev = "workspace"
-        if not isinstance(self.fs, LocalFileSystem):
-            rev = self.repo.get_rev()[:7]
+        rev = (
+            "workspace"
+            if isinstance(self.fs, LocalFileSystem)
+            else self.repo.get_rev()[:7]
+        )
         return f"Index({self.repo}, fs@{rev})"
 
     def __len__(self) -> int:
@@ -330,10 +332,8 @@ class Index:
     def dumpd(self) -> Dict[str, Dict]:
         def dump(stage: "Stage"):
             key = stage.path_in_repo
-            try:
-                key += ":" + stage.name  # type: ignore[attr-defined]
-            except AttributeError:
-                pass
+            with suppress(AttributeError):
+                key += f":{stage.name}"
             return key, stage.dumpd()
 
         return dict(dump(stage) for stage in self)

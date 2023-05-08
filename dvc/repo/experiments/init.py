@@ -105,7 +105,7 @@ def init_interactive(
             validator=validator,
             stream=stream,
         )
-        ret.update(compact(response))
+        ret |= compact(response)
         if prompts:
             ui.error_write(styled=True)
     return ret
@@ -146,7 +146,7 @@ def validate_prompts(
                 f"[prompt.invalid]'{value}' is a directory. "
                 "Please retry with an existing parameters file."
             )
-    elif key in ("code", "data"):
+    elif key in {"code", "data"}:
         if not os.path.exists(value):
             typ = "file" if is_file(value) else "directory"
             return value, msg_format.format(value, typ)
@@ -222,13 +222,12 @@ def init(
             provided=overrides,
             stream=stream,
         )
+    elif "live" in overrides:
+        # suppress `metrics`/`plots` if live is selected.
+        defaults.pop("metrics", None)
+        defaults.pop("plots", None)
     else:
-        if "live" in overrides:
-            # suppress `metrics`/`plots` if live is selected.
-            defaults.pop("metrics", None)
-            defaults.pop("plots", None)
-        else:
-            defaults.pop("live", None)  # suppress live otherwise
+        defaults.pop("live", None)  # suppress live otherwise
 
     context: Dict[str, str] = {**defaults, **overrides}
     assert "cmd" in context
